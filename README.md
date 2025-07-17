@@ -1,4 +1,4 @@
-# DEng.Lizard VLC XSPF Cutter
+# VLC XSPF Cutter
 
 This tool helps automate the process of cutting video clips using VLC bookmarks and `ffmpeg`.
 
