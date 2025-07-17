@@ -30,20 +30,24 @@ def main():
 
     tree = ET.parse(args.input)
     root = tree.getroot()
+    tracks = root.findall(".//xspf:trackList/xspf:track", ns)
 
-    location_el = root.find(".//xspf:location", ns)
-    if location_el is None:
-        raise ValueError("No <location> tag found in the XML.")
-    location = urllib.parse.unquote(location_el.text.replace("file:///", "").replace("/", os.sep))
-    full_path = location
-    base_filename = os.path.basename(full_path)
+    found = False
+    for track in tracks:
+        option_el = track.find("xspf:extension/vlc:option", ns)
+        if option_el is not None and 'bookmarks=' in option_el.text:
+            location_el = track.find("xspf:location", ns)
+            if location_el is None:
+                raise ValueError("No <location> tag found for bookmarked track.")
+            full_path = urllib.parse.unquote(location_el.text.replace("file:///", "").replace("/", os.sep))
+            bookmarks_raw = option_el.text
+            bookmarks = re.findall(r'time=([\d.]+)', bookmarks_raw)
+            bookmarks = list(map(float, bookmarks))
+            found = True
+            break
 
-    option_el = root.find(".//vlc:option", ns)
-    if option_el is None:
-        raise ValueError("No <vlc:option> tag found in the XML.")
-    bookmarks_raw = option_el.text
-    bookmarks = re.findall(r'time=([\d.]+)', bookmarks_raw)
-    bookmarks = list(map(float, bookmarks))
+    if not found:
+        raise ValueError("No track with bookmarks found in the XSPF.")
 
     cuts_path = os.path.join(args.target, "cuts.txt")
     with open(cuts_path, "w", encoding="utf-8") as f:
